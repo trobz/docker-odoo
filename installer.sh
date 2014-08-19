@@ -19,6 +19,7 @@ if [ ${libout_color:-1} -eq 1 ]; then
   ORANGE="\x1b[1;33;01m"
 fi
 
+
 function log(){
     if [ -n "$INIT_LOG" ]; then
         if [[ ! -f "$INIT_LOG" ]]; then
@@ -90,10 +91,13 @@ prompt() {
 trobz () {
     printf "$ORANGE"
     cat <<END
- ____  ___   __  ___  ___
-(_  _)(  ,) /  \(  ,)(_  )
-  )(   )  \( () )) ,\ / /
- (__) (_)\_)\__/(___/(___)
+.:                  ::
+:::.                ::
+::    :::. :::::::: :::::::: IIIIII
+::   ::   .:      ::::      ::  II
+::   ::   ::       :::      :: II
+ ::  ::   ::      :: :      : II
+  :::::     ::::::.   :::::: IIIIIII
 END
     printf "$DEF_COLOR"
     echo
@@ -114,11 +118,32 @@ title () {
     echo
 }
 
-die() {
+die () {
   error "EXIT with status 1"
   exit 1
 }
 
+function timeout () {
+    set +e
+	declare -i TIMEOUT=${2:-6} # 20min timeout
+	declare -i SLEEP_TIME=2
+	declare -i COUNT=0
+	declare -i STATUS=0
+	declare -i CURRENT_TIME=$(expr $SLEEP_TIME \* $COUNT)
+	while [[ $TIMEOUT -gt $CURRENT_TIME ]]; do
+	    COUNT=$(expr $COUNT \+ 1)
+	    CURRENT_TIME=$(expr $SLEEP_TIME \* $COUNT)
+	    eval "$1"
+	    STATUS=$?
+	    if [[ $STATUS -eq 0 ]]; then
+		    return 0
+		    set -e
+	    fi
+	    sleep $SLEEP_TIME
+	done
+	return 1
+	set -e
+}
 
 ########################################
 # General functions / vars
@@ -155,11 +180,12 @@ check_os () {
 ########################################
 
 
-LOG_LEVEL=4
+LOG_LEVEL=${1:-3}
 
 clear
 
 trobz
+
 title "OpenERP fullstack installer for Docker"
 ##########################################
 
@@ -419,26 +445,51 @@ EOF
 sudo sed -i 's/ -r=false//g' /etc/default/docker
 sudo sed -i -r 's/DOCKER_OPTS="(.*)"/DOCKER_OPTS="\1 -r=false"/' /etc/default/docker
 
+
+info "Pull OpenERP fullstack image from hub.docker.com"
+
+sudo docker pull trobz/openerp-fullstack:7.0
+
 info "Start OpenERP fullstack"
 
 cd "$CONTAINER_SPACE"
 sudo fig stop container &>/dev/null
 sudo fig rm --force container &>/dev/null
 sudo fig up container &
-FIG_PID=$!
-declare -i TIMEOUT=1200 # 20min timeout
-declare -i SLEEP_TIME=2
-declare -i COUNT=0
-declare -i CURRENT_TIME=`expr $SLEEP * $COUNT`
-while [[ $TIMEOUT -gt $CURRENT_TIME ]]; do
-    echo 'echo something...'
-    sleep $SLEEP_TIME
-    COUNT=`expr $COUNT + 1`
-    CURRENT_TIME=`expr $SLEEP * $COUNT`
-done
 
+check_fig () {
+    debug "Check if the port localhost:1122 is open..."
+    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -q -p 1122 openerp@localhost exit
+    NC_STATUS=$?
+    return $NC_STATUS
+}
 
+# fig is checking if a service is listening on localhost:1122, checking timeout=6s, retry=200,
+# so test will run during 20min
+timeout 'check_fig' 1200
+RETRY_STATUS=$?
 
-success "OpenERP fullstack setup finished !"
-success "you can access to the container by: 'ssh -p 1122 openerp@openerp.dev'"
-success "Enjoy young trobzer !"
+if [[ $RETRY_STATUS -eq 0 ]]; then
+    info "Stop the container and restart it in background"
+    sudo fig stop &>/dev/null
+    sudo fig up -d
+else
+    error "Timeout, unable to connect to the container SSH port after 20min..."
+    error "Please, try to start the container manually with the command:"
+    error "cd $CONTAINER_SPACE ; sudo fig up"
+    die
+fi
+
+timeout 'check_fig' 1200
+RETRY_STATUS=$?
+
+if [[ $RETRY_STATUS -eq 0 ]]; then
+    success "OpenERP fullstack setup finished !"
+    success "you can access to the container by: 'ssh -p 1122 openerp@localhost'"
+    success "Enjoy young trobzer !"
+else
+    error "Timeout, unable to connect to the container SSH port after 20min..."
+    error "Please, try to start the container manually with the command:"
+    error "cd $CONTAINER_SPACE ; sudo fig up"
+    die
+fi

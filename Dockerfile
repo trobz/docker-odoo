@@ -55,6 +55,9 @@ RUN cd aero* ; python setup.py install
 # jasper dependencies
 RUN pip install httplib2 pyPdf python-dime unidecode
 
+# prestashop dependencies
+RUN pip install prestapyt
+
 # font dependencies for report engines, require multiverse sources
 RUN echo ttf-mscorefonts-installer	msttcorefonts/accepted-mscorefonts-eula	boolean	true | /usr/bin/debconf-set-selections
 RUN apt-get install -y fontconfig fontconfig-config graphviz ghostscript gsfonts ttf-mscorefonts-installer
