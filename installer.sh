@@ -430,14 +430,16 @@ EOF
 
 info "Add upstart config for OpenERP fullstack"
 
-cat << EOF | sudo tee /etc/init/openerp-container.conf &>/dev/null
+CONTAINER_PREFIX=$(basename $CONTAINER_SPACE)
+
+cat << EOF | sudo tee /etc/init/${CONTAINER_PREFIX}-container.conf &>/dev/null
 description "OpenERP 7.0 container"
 author "Michel Meyer <mmeyer@trobz.com>"
 start on filesystem and started docker
 stop on runlevel [!2345]
 respawn
 script
-  /usr/bin/docker start -a openerp_container_1
+  /usr/bin/docker start -a ${CONTAINER_PREFIX}_container_1
 end script
 EOF
 
