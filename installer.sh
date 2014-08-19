@@ -363,7 +363,7 @@ info "Generate default fig.yml configuration in $CONTAINER_SPACE/fig.yml"
 cat << EOF > $CONTAINER_SPACE/fig.yml
 container:
 
-  image: trobz/openerp-fullstack
+  image: trobz/openerp-fullstack:7.0
 
   environment:
     - LOGIN=$USER_LOGIN
@@ -374,9 +374,11 @@ container:
     - USER_GID=$USER_GID
 
   ports:
-    - "8069:8069"
-    - "1122:22"
-    - "5432:5432"
+    - "8069:8069"   # openerp
+    - "1122:22"     # ssh
+    - "5432:5432"   # pstgresql
+    - "8011:8011"   # supervisord service monitor
+
 
   volumes:
 
@@ -422,7 +424,20 @@ info "Start OpenERP fullstack"
 cd "$CONTAINER_SPACE"
 sudo fig stop container &>/dev/null
 sudo fig rm --force container &>/dev/null
-sudo fig up -d container &>/dev/null
+sudo fig up container &
+FIG_PID=$!
+declare -i TIMEOUT=1200 # 20min timeout
+declare -i SLEEP_TIME=2
+declare -i COUNT=0
+declare -i CURRENT_TIME=`expr $SLEEP * $COUNT`
+while [[ $TIMEOUT -gt $CURRENT_TIME ]]; do
+    echo 'echo something...'
+    sleep $SLEEP_TIME
+    COUNT=`expr $COUNT + 1`
+    CURRENT_TIME=`expr $SLEEP * $COUNT`
+done
+
+
 
 success "OpenERP fullstack setup finished !"
 success "you can access to the container by: 'ssh -p 1122 openerp@openerp.dev'"

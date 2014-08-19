@@ -31,7 +31,7 @@ WORKDIR /tmp/setup/odoo/
 RUN tar xzf openerp-7.0.tar.gz
 RUN rm openerp-7.0.tar.gz
 RUN cd openerp* ; python setup.py install
-RUN rm -rf /usr/local/lib/python2.7/dist-packages/openerp-7.0-py2.7.egg
+RUN rm -rf /usr/local/lib/python2.7/dist-packages/openerp-*
 
 RUN pip install \
     sqlparse qunitsuite configobj
