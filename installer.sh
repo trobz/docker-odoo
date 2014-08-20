@@ -123,7 +123,7 @@ die () {
   exit 1
 }
 
-function timeout () {
+timeout () {
     set +e
 	declare -i TIMEOUT=${2:-6} # 20min timeout
 	declare -i SLEEP_TIME=2
@@ -143,6 +143,13 @@ function timeout () {
 	done
 	return 1
 	set -e
+}
+
+check_status () {
+    if [[ $? -ne 0 ]]; then
+        error "last command failed... Abort"
+        die
+    fi
 }
 
 ########################################
@@ -357,12 +364,14 @@ curl --version &>/dev/null
 if [[ $? -ne 0 ]]; then
     info "Install curl lib..."
     sudo apt-get install -y curl
+    check_status
 fi
 
 docker --version &>/dev/null
 if [[ $? -ne 0 ]]; then
     info "Install docker..."
     curl -sSL https://get.docker.io/ubuntu/ | sudo sh
+    check_status
 fi
 
 fig --version &>/dev/null
@@ -370,6 +379,7 @@ if [[ $? -ne 0 ]]; then
     info "Install fig..."
     curl -L https://github.com/orchardup/fig/releases/download/0.5.2/linux 2>/dev/null | sudo tee /usr/local/bin/fig &>/dev/null
     sudo chmod +x /usr/local/bin/fig
+    check_status
 fi
 
 success "All dependencies are installed"
@@ -458,6 +468,7 @@ cd "$CONTAINER_SPACE"
 sudo fig stop container &>/dev/null
 sudo fig rm --force container &>/dev/null
 sudo fig up container &
+check_status
 
 check_fig () {
     debug "Check if the port localhost:1122 is open..."
@@ -475,6 +486,7 @@ if [[ $RETRY_STATUS -eq 0 ]]; then
     info "Stop the container and restart it in background"
     sudo fig stop &>/dev/null
     sudo fig up -d
+    check_status
 else
     error "Timeout, unable to connect to the container SSH port after 20min..."
     error "Please, try to start the container manually with the command:"
