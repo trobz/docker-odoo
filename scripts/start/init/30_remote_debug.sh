@@ -1,7 +1,9 @@
 #!/bin/bash
 
+set +e
 ls $USER_HOME/lib/pydevd 2>/dev/null | egrep "pydevd|pycharm" &> /dev/null
 PYDEVD_AVAILABLE=$?
+set -e
 
 if [[ $PYDEVD_AVAILABLE -eq 0 ]]; then
     info "Update user PYTHONPATH to include remote debugging libraries"
@@ -13,7 +15,7 @@ if [[ $PYDEVD_AVAILABLE -eq 0 ]]; then
     set +e
     cat "$PYDEVD_MAP_FILE" 2>/dev/null | grep "$PYDEVD_MAP_VAR = \[\]" &>/dev/null
     HAS_ECLIPSE=$?
-    set +e
+    set -e
 
     if [[ $HAS_ECLIPSE -eq 0 ]]; then
         info "Update pydevd_file_utils.py for Eclipse"

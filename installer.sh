@@ -273,18 +273,16 @@ get_source () {
     local has_source=`check_source $CODE_SOURCE`
 
     if [[ $has_source -eq 2 ]]; then
-        warn "$CODE_SOURCE doesn't exists, please retry..."
-        get_source
-    elif [[ $has_source -eq 1 ]]; then
-        warn "$CODE_SOURCE is empty"
-
         local answer="y"
-        prompt answer "Do you want to create the folder [Y/n] ? "
+        prompt answer "$CODE_SOURCE doesn't exists, do you want to create the folder [Y/n] ? "
         if [[ $answer =~ n ]]; then
             get_source
         else
             mkdir -p $CODE_SOURCE
         fi
+
+    elif [[ $has_source -eq 1 ]]; then
+        warn "$CODE_SOURCE is empty"
     fi
 }
 
@@ -335,18 +333,24 @@ questions () {
         ide_path=$(dirname ${aptana_path})
         debug "Aptana found in $ide_path, looking for remote debug libraries..."
         DEBUG_PATH=`find $ide_path -maxdepth 4 -name "pysrc" 2>/dev/null`
-        DEBUG_MAP="    - $DEBUG_PATH:/opt/openerp/lib/pydevd"
+        if [[ -n $DEBUG_PATH ]]; then
+            DEBUG_MAP="    - $DEBUG_PATH:/opt/openerp/lib/pydevd"
+        fi
     elif [[ $HAS_ECLIPSE -eq 1 ]]; then
         ide_path=$(dirname ${eclipse_path})
         debug "Eclipse found in $ide_path, looking for remote debug libraries..."
         DEBUG_PATH=`find $ide_path -maxdepth 4 -name "pysrc" 2>/dev/null`
-        DEBUG_MAP="    - $DEBUG_PATH:/opt/openerp/lib/pydevd"
+        if [[ -n $DEBUG_PATH ]]; then
+            DEBUG_MAP="    - $DEBUG_PATH:/opt/openerp/lib/pydevd"
+        fi
     elif [[ $HAS_PYCHARM -eq 1 ]]; then
         echo $pycharm_path
         ide_path=$(dirname ${pycharm_path})
         debug "PyCharm found in $ide_path, looking for remote debug libraries..."
         DEBUG_PATH=`find $ide_path -maxdepth 4 -name "pycharm-debug.egg" 2>/dev/null`
-        DEBUG_MAP="    - $DEBUG_PATH:/opt/openerp/lib/pydevd/pycharm-debug.egg"
+        if [[ -n $DEBUG_PATH ]]; then
+            DEBUG_MAP="    - $DEBUG_PATH:/opt/openerp/lib/pydevd/pycharm-debug.egg"
+        fi
     fi
 
     confirm
@@ -399,7 +403,7 @@ info "Generate default fig.yml configuration in $CONTAINER_SPACE/fig.yml"
 cat << EOF > $CONTAINER_SPACE/fig.yml
 container:
 
-  image: trobz/openerp-fullstack:7.0
+  image: docker-hub.trobz.com:443/openerp/fullstack
 
   environment:
     - LOGIN=$USER_LOGIN
@@ -415,7 +419,6 @@ container:
     - "5432:5432"   # pstgresql
     - "8011:8011"   # supervisord service monitor
 
-
   volumes:
 
     # SSH personal keys
@@ -429,7 +432,7 @@ container:
     # openerp sources
     - $CODE_SOURCE:/opt/openerp/code
 
-    # eclipse debug libs (of any)
+    # debug libs (of any)
 $DEBUG_MAP
 
 
@@ -455,12 +458,26 @@ EOF
 
 # disable docker container auto start feature (manage it with upstart instead)
 sudo sed -i 's/ -r=false//g' /etc/default/docker
-sudo sed -i -r 's/DOCKER_OPTS="(.*)"/DOCKER_OPTS="\1 -r=false"/' /etc/default/docker
+sudo sed -i -r 's/.DOCKER_OPTS="(.*)"/DOCKER_OPTS="\1 -r=false"/' /etc/default/docker
 
 
-info "Pull OpenERP fullstack image from hub.docker.com"
+info "Configure access to Trobz private docker repository,"
+info "please enter your http authentication identifier (like on all trobz http services)"
 
-sudo docker pull trobz/openerp-fullstack:7.0
+set +e
+docker_login () {
+    sudo docker login https://docker-hub.trobz.com:443/v1/
+    if [[ $? -ne 0 ]]; then
+        warn "Failed to connect to Trobz private docker registry, please try again..."
+        docker_login
+    fi
+}
+docker_login
+set -e
+
+info "Pull OpenERP fullstack image from trobz private docker repository"
+
+sudo docker pull docker-hub.trobz.com:443/openerp/fullstack
 
 info "Start OpenERP fullstack"
 
