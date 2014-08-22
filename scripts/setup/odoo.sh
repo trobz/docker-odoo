@@ -16,7 +16,7 @@ apt-get install -y \
 echo "PIP: install Odoo python libs"
 
 pip install httplib2 sqlparse qunitsuite configobj
-pip install pyPdf python-dime unidecode prestapyt
+pip install pyPdf python-dime unidecode prestapyt requests
 
 
 echo "Get Odoo and manually setup it with python setup toolkit"
