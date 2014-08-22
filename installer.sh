@@ -363,6 +363,16 @@ questions
 title "Install all dependencies"
 ##########################################
 
+ls /usr/local/share/ca-certificates/ | egrep 'trobz|COMODORS' &>/dev/null
+if [[ $? -ne 0 ]]; then
+    info "Install trobz certificates..."
+    CA_HTTP_URL="https://code.trobz.com/ca-certificates"
+    CA_PATH="/usr/local/share/ca-certificates"
+    for file in "AddTrustExternalCARoot" "COMODORSAAddTrustCA" "COMODORSADomainValidationSecureServerCA" "trobz"; do
+        sudo curl $CA_HTTP_URL/${file}.crt -o $CA_PATH/${file}.crt &>/dev/null
+    done
+    sudo update-ca-certificates
+fi
 
 curl --version &>/dev/null
 if [[ $? -ne 0 ]]; then
