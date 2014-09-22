@@ -15,6 +15,9 @@ RUN apt-get install -y postgresql postgresql-contrib-9.1
 # Run the official OpenERP prepare scripts
 ############################################################
 
+ADD scripts/setup/odoo-deps.sh /tmp/setup/odoo/odoo-deps.sh
+RUN /bin/bash < /tmp/setup/odoo/odoo-deps.sh
+
 ADD scripts/setup/odoo.sh /tmp/setup/odoo/odoo.sh
 RUN /bin/bash < /tmp/setup/odoo/odoo.sh
 
