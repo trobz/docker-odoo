@@ -53,7 +53,7 @@ ENV ODOO_DEMO 0
 # Add odoo 7.0 demo files
 ############################################################
 
-ADD demo/odoo.sql /tmp/setup/odoo/demo/odoo.sql
+ADD demo /tmp/setup/odoo/demo
 
 # Finalization
 ############################################################
@@ -66,3 +66,4 @@ RUN echo 'debconf debconf/frontend select Dialog' | debconf-set-selections
 
 ADD scripts/start/init/20_postgres.sh /usr/local/docker/start/init/20_postgres.sh
 ADD scripts/start/init/30_remote_debug.sh /usr/local/docker/start/init/30_remote_debug.sh
+ADD scripts/start/init/40_demo_odoo.sh /usr/local/docker/start/init/40_demo_odoo.sh
