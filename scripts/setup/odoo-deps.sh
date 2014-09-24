@@ -23,3 +23,27 @@ echo "PIP: install useful python libs"
 pip install httplib2 sqlparse qunitsuite configobj
 pip install pyPdf python-dime unidecode prestapyt requests xlsxwriter
 
+echo "Install webkit2pdf command"
+
+WTH_VERSION="0.12.1"
+UBUNTU_ARCHI=`uname -a | grep 64 &>/dev/null; [ $? -eq 0 ] && echo 'amd64' || echo 'i386'`
+UBUNTU_CODE=`lsb_release -a 2>/dev/null | grep Codename  | sed 's/.*\:\t*//'`
+WTH_BASE_URL="http://sourceforge.net/projects/wkhtmltopdf/files/%s/wkhtmltox-%s_linux-%s-%s.deb/download"
+WTH_URL=`printf $WTH_BASE_URL $WTH_VERSION $WTH_VERSION $UBUNTU_CODE $UBUNTU_ARCHI`
+
+echo "- download wkhtmltopdf $WTH_VERSION deb package for ubuntu $UBUNTU_CODE..."
+echo "  package url: $WTH_URL"
+wget  "$WTH_URL" -O /tmp/wkhtmltopdf.deb
+
+echo "- install wkhtmltopdf deb package..."
+dpkg -i /tmp/wkhtmltopdf.deb
+
+echo "- clean up installation folder..."
+rm -f /tmp/wkhtmltopdf.deb
+
+echo "Install pychart manually (pip package doesn't exists anymore)"
+
+mkdir -p /tmp/setup/pychart/
+wget http://download.gna.org/pychart/PyChart-1.39.tar.gz -O /tmp/setup/pychart/pychart.tar.gz
+cd /tmp/setup/pychart && tar xzf pychart.tar.gz && cd PyChart-1.39 && python setup.py install
+

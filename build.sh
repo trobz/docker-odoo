@@ -1,2 +1,2 @@
-sudo docker build  -t trobz/odoo:7.0 .
+sudo docker build  -t trobz/odoo:8.0 .
 

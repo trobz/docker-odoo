@@ -2,7 +2,7 @@
 
 info "Setup PostgreSQL to allow external data/config/log storage..."
 
-POSTGRESQL_VERSION="9.1"
+POSTGRESQL_VERSION="9.3"
 
 export POSTGRESQL_USER=${POSTGRESQL_USER:-"openerp"}
 export POSTGRESQL_PASS=${POSTGRESQL_PASS:-"openerp"}
