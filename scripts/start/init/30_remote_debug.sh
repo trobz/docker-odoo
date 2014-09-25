@@ -1,12 +1,14 @@
 #!/bin/bash
 
+DEBUG_PATH="/usr/local/lib/pydevd"
+
 set +e
-ls $USER_HOME/lib/pydevd 2>/dev/null | egrep "pydevd|pycharm" &> /dev/null
+ls $DEBUG_PATH 2>/dev/null | egrep "pydevd|pycharm" &> /dev/null
 PYDEVD_AVAILABLE=$?
 set -e
 
 if [[ $PYDEVD_AVAILABLE -eq 0 ]]; then
-    PYDEVD_MAP_FILE="$USER_HOME/lib/pydevd/pydevd_file_utils.py"
+    PYDEVD_MAP_FILE="$DEBUG_PATH/pydevd_file_utils.py"
     PYDEVD_MAP_VAR="PATHS_FROM_ECLIPSE_TO_PYTHON"
 
     set +e
@@ -23,9 +25,9 @@ if [[ $PYDEVD_AVAILABLE -eq 0 ]]; then
 
     info "Update user PYTHONPATH to include remote debugging libraries"
     if [[ $HAS_ECLIPSE -eq 0 ]]; then
-        echo -e "\n\nexport PYTHONPATH=$PYTHONPATH:$USER_HOME/lib/pydevd" >> $USER_HOME/.bashrc
+        echo -e "\n\nexport PYTHONPATH=$PYTHONPATH:$DEBUG_PATH/pydevd" >> $USER_HOME/.bashrc
     else
-        echo -e "\n\nexport PYTHONPATH=$PYTHONPATH:$USER_HOME/lib/pydevd/pycharm-debug.egg" >> $USER_HOME/.bashrc
+        echo -e "\n\nexport PYTHONPATH=$PYTHONPATH:$DEBUG_PATH/pycharm-debug.egg" >> $USER_HOME/.bashrc
     fi
 
     success "Remote debug configured"
