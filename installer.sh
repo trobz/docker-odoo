@@ -228,6 +228,8 @@ container:
   environment:
     - USER_UID=$USER_UID
     - USER_GID=$USER_GID
+    - DEMO_ODOO=1
+    - VIM_SETUP=1
 
   ports:
     - "7769:8069"   # openerp
