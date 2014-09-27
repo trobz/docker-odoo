@@ -4,7 +4,7 @@
 # Common functions
 ########################################
 
-ODOO_VERSION=${1:-"8.0"}
+ODOO_VERSION=${1:-"latest"}
 LOG_LEVEL=${2:-3}
 
 #TODO: switch to color.sh
