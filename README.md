@@ -20,7 +20,7 @@ This image is based on `trobz/sshd` + his own dependencies.
 - Supervisord 3.0b2 
 - PostgreSQL 9.3.5
 - Python 2.7.6 / 3.4.0
-- Odoo 8.0 + all required python packages (setup based on offical odoo `setup.py`)
+- Odoo 9.0 (master branch) + all required python packages (setup based on offical odoo `setup.py`)
 
 ## Features
 
