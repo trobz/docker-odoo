@@ -1,11 +1,11 @@
 #!/bin/bash
-#
-# OpenERP fullstack docker installed
-#
 
 ########################################
-# Common logging functions
+# Common functions
 ########################################
+
+ODOO_VERSION=${1:-"7.0"}
+LOG_LEVEL=${2:-3}
 
 #TODO: switch to color.sh
 if [ ${libout_color:-1} -eq 1 ]; then
@@ -68,42 +68,6 @@ error() {
   log "$level" "$@"
 }
 
-prompt() {
-  val=""
-  def_val=${!1:-""}
-
-  while [[ -z "$val" ]]; do
-    level=$(printf '%7s:' "INPUT")
-    printf "$BLUE${level}$DEF_COLOR ${@:2:${#@}}"
-    read val
-    if [[ -n "$def_val" ]]; then
-        break
-    fi
-  done
-
-  if [[ -n "$val" ]]; then
-    eval "$1=\"$val\""
-  fi
-}
-
-
-
-trobz () {
-    printf "$ORANGE"
-    cat <<END
-.:                  ::
-:::.                ::
-::    :::. :::::::: :::::::: IIIIII
-::   ::   .:      ::::      ::  II
-::   ::   ::       :::      :: II
- ::  ::   ::      :: :      : II
-  :::::     ::::::.   :::::: IIIIIII
-END
-    printf "$DEF_COLOR"
-    echo
-    echo
-}
-
 line () {
     printf "$BLUE"
     for n in `seq 1 $1`; do printf '#'; done
@@ -152,14 +116,6 @@ check_status () {
     fi
 }
 
-########################################
-# General functions / vars
-########################################
-
-USER_HOME=$(eval echo ~${SUDO_USER})
-USER_UID=`id -u $(whoami)`
-USER_GID=`id -g $(whoami)`
-
 check_cpu_archi () {
     grep flags /proc/cpuinfo | grep " lm " &>/dev/null
     ret=$?
@@ -181,19 +137,18 @@ check_os () {
 }
 
 
-
 ########################################
-# Code
+# Installation script
 ########################################
 
 
-LOG_LEVEL=${1:-3}
+USER_HOME=$(eval echo ~${SUDO_USER})
+USER_UID=`id -u $(whoami)`
+USER_GID=`id -g $(whoami)`
 
 clear
 
-trobz
-
-title "OpenERP fullstack installer for Docker"
+title "Odoo $ODOO_VERSION Container installer by TrobZ"
 ##########################################
 
 info "check system configuration..."
@@ -203,8 +158,6 @@ archi=`check_archi`
 os=`check_os`
 
 shopt -s nocasematch;
-
-
 
 if [[ $USER_UID -eq 0 ]]; then
     error "This script can't be run by the root user"
@@ -226,153 +179,9 @@ else
     die
 fi
 
-title "Get user specific info"
-##########################################
-
-
-confirm () {
-    info "Your container will be configured with these infos:"
-    info "- name:  $USER_NAME"
-    info "- login: $USER_LOGIN"
-    info "- email: $USER_EMAIL"
-    info "- container space: $CONTAINER_SPACE"
-    info "- source code: $CODE_SOURCE"
-
-    if [[ -n $DEBUG_PATH ]]; then
-        info "- IDE remote debugger lib: $DEBUG_PATH"
-    fi
-
-    local answer="y"
-    prompt answer "Please, confirm these infos [Y/n]"
-    if [[ $answer =~ n ]]; then
-        questions
-    else
-        success "All user info geathered !"
-    fi
-}
-
-
-check_source () {
-    list=`ls $1 2>/dev/null`
-    has_folder=$?
-    count=`ls $1 2>/dev/null | wc -l`
-
-    if [[ $has_folder -ne 0 ]]; then
-        echo 2
-    elif [[ $count -gt 0 ]]; then
-        echo 0
-    else
-        echo 1
-    fi
-}
-
-get_source () {
-    CODE_SOURCE="$USER_HOME/code/openerp"
-    prompt CODE_SOURCE  "Where do you store Trobz source code [$CODE_SOURCE] ? "
-
-    local has_source=`check_source $CODE_SOURCE`
-
-    if [[ $has_source -eq 2 ]]; then
-        local answer="y"
-        prompt answer "$CODE_SOURCE doesn't exists, do you want to create the folder [Y/n] ? "
-        if [[ $answer =~ n ]]; then
-            get_source
-        else
-            mkdir -p $CODE_SOURCE
-        fi
-
-    elif [[ $has_source -eq 1 ]]; then
-        warn "$CODE_SOURCE is empty"
-    fi
-}
-
-questions () {
-
-
-    prompt USER_NAME    "What's your full name ? "
-    prompt USER_LOGIN   "What's your login ? "
-
-    USER_EMAIL="$USER_LOGIN@trobz.com"
-    prompt USER_EMAIL   "What's your email address [$USER_EMAIL] ? "
-
-    get_source
-
-    CONTAINER_SPACE="$USER_HOME/openerp"
-    prompt CONTAINER_SPACE  "Where do you want to run your container [$CONTAINER_SPACE] ? "
-
-
-    # detect IDE
-
-    detect_ide () {
-        aptana_path=`find $1 -maxdepth 3 -type f -name "AptanaStudio*" 2>/dev/null | head -n 1 `
-        HAS_APTANA=`[ -z $aptana_path ] && echo 0 || echo 1`
-        eclipse_path=`find $1 -maxdepth 3 -type f -name "eclipse*" 2>/dev/null | head -n 1`
-        HAS_ECLIPSE=`[ -z $eclipse_path ] && echo 0 || echo 1`
-        pycharm_path=`find $1 -maxdepth 3 -type f -name "pycharm-debug*" 2>/dev/null | head -n 1`
-        HAS_PYCHARM=`[ -z $pycharm_path ] && echo 0 || echo 1`
-        HAS_IDE=`expr $HAS_APTANA + $HAS_ECLIPSE + $HAS_PYCHARM`
-    }
-
-    detect_ide $USER_HOME
-
-    # ask for the IDE path
-    if [[ $HAS_IDE -eq 0 ]]; then
-        prompt ide_path  "Where have you installed your IDE ? "
-        detect_ide $ide_path
-    fi
-
-    if [[ $HAS_IDE -eq 0 ]]; then
-        warn "no IDE detected, you will have to configure the remote debugging manually..."
-    elif [[ $HAS_IDE -gt 1 ]]; then
-        warn "multiple IDE detected, only one will be automatically configured, see next info:"
-    fi
-
-    DEBUG_PATH=""
-    DEBUG_MAP=""
-    if [[ $HAS_APTANA -eq 1 ]]; then
-        ide_path=$(dirname ${aptana_path})
-        debug "Aptana found in $ide_path, looking for remote debug libraries..."
-        DEBUG_PATH=`find $ide_path -maxdepth 4 -name "pysrc" 2>/dev/null`
-        if [[ -n $DEBUG_PATH ]]; then
-            DEBUG_MAP="    - $DEBUG_PATH:/opt/openerp/lib/pydevd"
-        fi
-    elif [[ $HAS_ECLIPSE -eq 1 ]]; then
-        ide_path=$(dirname ${eclipse_path})
-        debug "Eclipse found in $ide_path, looking for remote debug libraries..."
-        DEBUG_PATH=`find $ide_path -maxdepth 4 -name "pysrc" 2>/dev/null`
-        if [[ -n $DEBUG_PATH ]]; then
-            DEBUG_MAP="    - $DEBUG_PATH:/opt/openerp/lib/pydevd"
-        fi
-    elif [[ $HAS_PYCHARM -eq 1 ]]; then
-        echo $pycharm_path
-        ide_path=$(dirname ${pycharm_path})
-        debug "PyCharm found in $ide_path, looking for remote debug libraries..."
-        DEBUG_PATH=`find $ide_path -maxdepth 4 -name "pycharm-debug.egg" 2>/dev/null`
-        if [[ -n $DEBUG_PATH ]]; then
-            DEBUG_MAP="    - $DEBUG_PATH:/opt/openerp/lib/pydevd/pycharm-debug.egg"
-        fi
-    fi
-
-    confirm
-}
-
-
-questions
-
 
 title "Install all dependencies"
 ##########################################
-
-ls /usr/local/share/ca-certificates/ | egrep 'trobz|COMODORS' &>/dev/null
-if [[ $? -ne 0 ]]; then
-    info "Install trobz certificates..."
-    CA_HTTP_URL="https://code.trobz.com/ca-certificates"
-    CA_PATH="/usr/local/share/ca-certificates"
-    for file in "AddTrustExternalCARoot" "COMODORSAAddTrustCA" "COMODORSADomainValidationSecureServerCA" "trobz"; do
-        sudo curl $CA_HTTP_URL/${file}.crt -o $CA_PATH/${file}.crt &>/dev/null
-    done
-    sudo update-ca-certificates
-fi
 
 curl --version &>/dev/null
 if [[ $? -ne 0 ]]; then
@@ -399,11 +208,12 @@ fi
 success "All dependencies are installed"
 
 
-
-title "Setup OpenERP fullstack container"
+title "Setup Odoo container"
 ##########################################
 
 set -e
+
+CONTAINER_SPACE="$USER_HOME/docker/odoo-$ODOO_VERSION"
 
 info "Setup container folder in $CONTAINER_SPACE"
 mkdir -p $CONTAINER_SPACE
@@ -413,52 +223,46 @@ info "Generate default fig.yml configuration in $CONTAINER_SPACE/fig.yml"
 cat << EOF > $CONTAINER_SPACE/fig.yml
 container:
 
-  image: docker-hub.trobz.com:443/openerp/fullstack
+  image: trobz/odoo:$ODOO_VERSION
 
   environment:
-    - LOGIN=$USER_LOGIN
-    - GIT_USERNAME=$USER_NAME
-    - GIT_EMAIL=$USER_EMAIL
-    - OPENERP_SOURCE=$CODE_SOURCE
     - USER_UID=$USER_UID
     - USER_GID=$USER_GID
     - DEMO_ODOO=1
     - VIM_SETUP=1
 
   ports:
-    - "8069:8069"   # openerp
-    - "1122:22"     # ssh
-    - "5432:5432"   # pstgresql
-    - "8011:8011"   # supervisord service monitor
+    - "7769:8069"   # openerp
+    - "7722:22"     # ssh
+    - "7732:5432"   # pstgresql
+    - "7711:8011"   # supervisord service monitor
 
   volumes:
 
-    # SSH personal keys
-    - $USER_HOME/.ssh:/usr/local/ssh
+    # SSH personal keys, allow ssh access without authentication
+    - $USER_HOME/.ssh/id_rsa.pub:/usr/local/ssh/id_rsa.pub
 
     # postgres shared config files
     - postgres/data:/etc/postgresql/docker/data
     - postgres/config:/etc/postgresql/docker/config
     - postgres/log:/etc/postgresql/docker/log
 
-    # openerp sources
-    - $CODE_SOURCE:/opt/openerp/code
+    # supervisord log
+    - supervisord/log:/var/log/supervisor
 
-    # debug libs (of any)
-$DEBUG_MAP
-
+    # auto setup remote debugging for Eclipse/PyCharm
+    # - map your IDE debug libs into '/usr/local/lib/pydevd'
+    # ie: - /home/foo/pycharm/pycharm-debug.egg:/usr/local/lib/pydevd/pycharm-debug.egg
 
   mem_limit: 500000000
-  hostname: openerp.dev
-  domainname: openerp.dev
 EOF
 
-info "Add upstart config for OpenERP fullstack"
+info "Add upstart config for Odoo"
 
 CONTAINER_PREFIX=$(basename $CONTAINER_SPACE)
 
 cat << EOF | sudo tee /etc/init/${CONTAINER_PREFIX}-container.conf &>/dev/null
-description "OpenERP 7.0 container"
+description "OpenERP $ODOO_VERSION container"
 author "Michel Meyer <mmeyer@trobz.com>"
 start on filesystem and started docker
 stop on runlevel [!2345]
@@ -473,25 +277,9 @@ sudo sed -i 's/ -r=false//g' /etc/default/docker
 sudo sed -i -r 's/.DOCKER_OPTS="(.*)"/DOCKER_OPTS="\1 -r=false"/' /etc/default/docker
 
 
-info "Configure access to Trobz private docker repository,"
-info "please enter your http authentication identifier (like on all trobz http services)"
+sudo docker pull trobz/odoo:$ODOO_VERSION
 
-set +e
-docker_login () {
-    sudo docker login https://docker-hub.trobz.com:443/v1/
-    if [[ $? -ne 0 ]]; then
-        warn "Failed to connect to Trobz private docker registry, please try again..."
-        docker_login
-    fi
-}
-docker_login
-set -e
-
-info "Pull OpenERP fullstack image from trobz private docker repository"
-
-sudo docker pull docker-hub.trobz.com:443/openerp/fullstack
-
-info "Start OpenERP fullstack"
+info "Start Odoo $ODOO_VERSION container"
 
 cd "$CONTAINER_SPACE"
 sudo fig stop container &>/dev/null
@@ -500,8 +288,8 @@ sudo fig up container &
 check_status
 
 check_fig () {
-    debug "Check if the port localhost:1122 is open..."
-    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -q -p 1122 openerp@localhost exit
+    debug "Check if the port localhost:7722 is open..."
+    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -q -p 7722 openerp@localhost exit
     NC_STATUS=$?
     return $NC_STATUS
 }
@@ -527,12 +315,23 @@ timeout 'check_fig' 1200
 RETRY_STATUS=$?
 
 if [[ $RETRY_STATUS -eq 0 ]]; then
-    success "OpenERP fullstack setup finished !"
-    success "you can access to the container by: 'ssh -p 1122 openerp@localhost'"
-    success "Enjoy young trobzer !"
+    success << EOF Odoo $ODOO_VERSION container setup finished !
+
+Access to:
+- Odoo $ODOO_VERSION demo: http://localhost:7769/
+- SSH into the container: ssh -p 7722 openerp@localhost
+- PostgreSQL: openerp:openerp@localhost:7732
+- Supervisor web panel: http://openerp:openerp@localhost:7711/
+
+Enjoy !
+EOF
+
 else
     error "Timeout, unable to connect to the container SSH port after 20min..."
     error "Please, try to start the container manually with the command:"
     error "cd $CONTAINER_SPACE ; sudo fig up"
     die
 fi
+
+
+
