@@ -1,16 +1,16 @@
 if [[ $ODOO_DEMO -eq 1 ]]; then
     set -e
 
-    info 'Setup a Odoo 8.0 demo instance'
+    info 'Setup a Odoo master demo instance'
     
-    DEMODB="demo_odoo80"
+    DEMODB="demo_odoo_master"
     PGPATH="/etc/postgresql/docker" 
     OOPATH="/usr/local/lib/odoo"
     PGEXEC="/usr/lib/postgresql/9.3/bin"
     OOEXEC="$OOPATH/openerp-server"
 
-    info 'Update Odoo 8.0 source code'
-    cd $OOPATH && git pull origin 8.0
+    info 'Update Odoo master source code'
+    cd $OOPATH && git pull origin master
 
     debug 'temporary start postgres service'
     sudo -u postgres -H $PGEXEC/pg_ctl start -w -D $PGPATH/data/db &>/dev/null
