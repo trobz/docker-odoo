@@ -4,7 +4,7 @@ This docker image setup a full openerp environment, with pre-installed PostgreSQ
 
 A one-command quick installation script is available (Ubuntu 14.04 only):
 ```
-curl -sSL https://raw.githubusercontent.com/trobz/docker-odoo/master/installer.sh  | /bin/bash
+curl -sSL http://code.trobz.com/install/latest  | /bin/bash
 ```
 
 > Note:
