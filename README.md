@@ -27,7 +27,7 @@ This image is based on `trobz/sshd` + his own dependencies.
 
 ### Odoo demo
 
-If the env `DEMO_ODOO` is set to 1, the container will setup a Odoo instance for you by creating the database and adding a supervisord configuration for Odoo.
+If the env `ODOO_DEMO` is set to 1, the container will setup a Odoo instance for you by creating the database and adding a supervisord configuration for Odoo.
 
 Then, you will have a running Odoo instance accessible on `http://localhost:<port-map-to-8069>/` out-of-the-box.
  
