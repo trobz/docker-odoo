@@ -6,6 +6,7 @@
 
 ODOO_VERSION=${1:-"7.0"}
 LOG_LEVEL=${2:-3}
+PORT_PREFIX=${3:-7}
 
 #TODO: switch to color.sh
 if [ ${libout_color:-1} -eq 1 ]; then
@@ -232,10 +233,10 @@ container:
     - VIM_SETUP=1
 
   ports:
-    - "7769:8069"   # openerp
-    - "7722:22"     # ssh
-    - "7732:5432"   # pstgresql
-    - "7711:8011"   # supervisord service monitor
+    - "${PORT_PREFIX}069:8069"   # openerp
+    - "${PORT_PREFIX}022:22"     # ssh
+    - "${PORT_PREFIX}032:5432"   # pstgresql
+    - "${PORT_PREFIX}011:8011"   # supervisord service monitor
 
   volumes:
 
@@ -259,7 +260,7 @@ EOF
 
 info "Add upstart config for Odoo"
 
-CONTAINER_PREFIX=$(basename $CONTAINER_SPACE)
+CONTAINER_PREFIX=$(basename $CONTAINER_SPACE | sed 's/[_.\-]//g')
 
 cat << EOF | sudo tee /etc/init/${CONTAINER_PREFIX}-container.conf &>/dev/null
 description "OpenERP $ODOO_VERSION container"
@@ -288,13 +289,13 @@ sudo fig up container &
 check_status
 
 check_fig () {
-    debug "Check if the port localhost:7722 is open..."
-    ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -q -p 7722 openerp@localhost exit
+    debug "Check if the port localhost:${PORT_PREFIX}022 is open..."
+    echo quit | timeout 2s telnet localhost "${PORT_PREFIX}022" 2>/dev/null | grep Connected &>/dev/null
     NC_STATUS=$?
     return $NC_STATUS
 }
 
-# fig is checking if a service is listening on localhost:1122, checking timeout=6s, retry=200,
+# fig is checking if a service is listening on localhost:port, checking timeout=6s, retry=200,
 # so test will run during 20min
 timeout 'check_fig' 1200
 RETRY_STATUS=$?
@@ -315,16 +316,18 @@ timeout 'check_fig' 1200
 RETRY_STATUS=$?
 
 if [[ $RETRY_STATUS -eq 0 ]]; then
-    success << EOF Odoo $ODOO_VERSION container setup finished !
+    read -r -d '' msg << EOF 
+Odoo $ODOO_VERSION container setup finished !
 
 Access to:
-- Odoo $ODOO_VERSION demo: http://localhost:7769/
-- SSH into the container: ssh -p 7722 openerp@localhost
-- PostgreSQL: openerp:openerp@localhost:7732
-- Supervisor web panel: http://openerp:openerp@localhost:7711/
+- Odoo $ODOO_VERSION demo: http://localhost:${PORT_PREFIX}069/
+- SSH into the container: ssh -p ${PORT_PREFIX}022 openerp@localhost
+- PostgreSQL: openerp:openerp@localhost:${PORT_PREFIX}032
+- Supervisor web panel: http://openerp:openerp@localhost:${PORT_PREFIX}011/
 
 Enjoy !
 EOF
+    success "$msg"
 
 else
     error "Timeout, unable to connect to the container SSH port after 20min..."
