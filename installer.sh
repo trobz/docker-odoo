@@ -88,26 +88,33 @@ die () {
   exit 1
 }
 
-timeout () {
-    set +e
-	declare -i TIMEOUT=${2:-6} # 20min timeout
-	declare -i SLEEP_TIME=2
-	declare -i COUNT=0
-	declare -i STATUS=0
-	declare -i CURRENT_TIME=$(expr $SLEEP_TIME \* $COUNT)
-	while [[ $TIMEOUT -gt $CURRENT_TIME ]]; do
-	    COUNT=$(expr $COUNT \+ 1)
-	    CURRENT_TIME=$(expr $SLEEP_TIME \* $COUNT)
-	    eval "$1"
-	    STATUS=$?
-	    if [[ $STATUS -eq 0 ]]; then
-		    return 0
-		    set -e
-	    fi
-	    sleep $SLEEP_TIME
-	done
-	return 1
-	set -e
+exec_timeout () {
+  set +e
+  local -i TIMEOUT=${2:-6} # 20min timeout
+  local -i SLEEP_TIME=2
+  local -i COUNT=0
+  local -i STATUS=0
+  local -i CURRENT_TIME=$(expr $SLEEP_TIME \* $COUNT)
+  while [[ $TIMEOUT -gt $CURRENT_TIME ]]; do
+      COUNT=$(expr $COUNT \+ 1)
+      CURRENT_TIME=$(expr $SLEEP_TIME \* $COUNT)
+      eval "$1"
+      STATUS=$?
+      if [[ $STATUS -eq 0 ]]; then
+              return 0
+              set -e
+      fi
+      sleep $SLEEP_TIME
+  done
+  return 1
+  set -e
+}
+
+check_fig () {
+    debug "check if the port localhost:${PORT_PREFIX}022 is open for SSH..."
+    sleep 1s | timeout 2s telnet localhost "${PORT_PREFIX}022" 2>/dev/null | grep SSH &>/dev/null
+    nc_status=$?
+    return $nc_status
 }
 
 check_status () {
@@ -141,7 +148,6 @@ check_os () {
 ########################################
 # Installation script
 ########################################
-
 
 USER_HOME=$(eval echo ~${SUDO_USER})
 USER_UID=`id -u $(whoami)`
@@ -288,16 +294,9 @@ sudo fig rm --force container &>/dev/null
 sudo fig up container &
 check_status
 
-check_fig () {
-    debug "Check if the port localhost:${PORT_PREFIX}022 is open..."
-    echo quit | timeout 2s telnet localhost "${PORT_PREFIX}022" 2>/dev/null | grep Connected &>/dev/null
-    NC_STATUS=$?
-    return $NC_STATUS
-}
-
 # fig is checking if a service is listening on localhost:port, checking timeout=6s, retry=200,
 # so test will run during 20min
-timeout 'check_fig' 1200
+exec_timeout 'check_fig' 1200
 RETRY_STATUS=$?
 
 if [[ $RETRY_STATUS -eq 0 ]]; then
@@ -312,7 +311,7 @@ else
     die
 fi
 
-timeout 'check_fig' 1200
+exec_timeout 'check_fig' 1200
 RETRY_STATUS=$?
 
 if [[ $RETRY_STATUS -eq 0 ]]; then
@@ -328,7 +327,6 @@ Access to:
 Enjoy !
 EOF
     success "$msg"
-
 else
     error "Timeout, unable to connect to the container SSH port after 20min..."
     error "Please, try to start the container manually with the command:"
