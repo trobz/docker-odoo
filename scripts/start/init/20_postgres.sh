@@ -29,6 +29,20 @@ function exec_psql {
 
 
 set +e
+ls $POSTGRESQL_DATA &>/dev/null
+HAS_CONF_DIR=$?
+set -e
+
+if [[ $HAS_CONF_DIR -ne 0 ]]; then
+    warn "the PostreSQL database will not be persistent and will be stored inside the container."
+    warn "please, bind a folder on $POSTGRESQL_PUB to make it persistent..."
+fi
+
+# force the creation of postgres user-specific folders...
+mkdir -p $POSTGRESQL_PUB/{data,log,config}
+
+
+set +e
 CONF_COUNT=$(sudo su postgres -c "ls $POSTGRESQL_CONF | wc -l")
 [ $CONF_COUNT -ne 0 ]
 HAS_USER_CONFIG=$?
