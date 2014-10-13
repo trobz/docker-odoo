@@ -21,7 +21,7 @@ ln -s /usr/lib/`uname -i`-linux-gnu/libz.so /usr/lib/
 echo "PIP: install useful python libs"
 
 pip install httplib2 sqlparse qunitsuite configobj
-pip install pyPdf python-dime unidecode prestapyt requests xlsxwriter
+pip install pyPdf python-dime unidecode prestapyt requests xlsxwriter egenix-mx-base
 
 echo "Install webkit2pdf command"
 
