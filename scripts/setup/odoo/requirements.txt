@@ -1,3 +1,7 @@
+# OpenSSL python support
+pyOpenSSL==0.15.1
+ndg-httpsclient==0.4.0
+pyasn1==0.1.7
 # generated with the setup.py from official odoo 7.0 source code: https://github.com/odoo/odoo/blob/9ed6accd2e8fca404018b2f998d0c913453e101b/setup.py
 Babel==1.3
 docutils==0.12
