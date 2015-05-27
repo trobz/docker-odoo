@@ -19,7 +19,7 @@ if [[ $ODOO_DEMO -eq 1 ]]; then
     if [[ $DB_EXISTS -ne 0 ]] ; then  
         info "Create and initalize database $DEMODB"
         sudo -u $USERNAME -H createdb $DEMODB 
-        sudo -u $USERNAME -H $OOEXEC -d $DEMODB --init base --stop-after-init
+        sudo -u $USERNAME -H pew in odoo-7.0 $OOEXEC -d $DEMODB --init base --stop-after-init
     else
         warn "$DEMODB already exists, skip database initialization"
     fi
@@ -29,6 +29,6 @@ if [[ $ODOO_DEMO -eq 1 ]]; then
 
     info 'Configure the demo instance to automatically start with supervisord'
     cp /tmp/setup/odoo/demo/odoo_demo.conf /etc/supervisor/conf.d/odoo_demo.conf
-    
+    replace_env /etc/supervisor/conf.d/odoo_demo.conf
 fi
 

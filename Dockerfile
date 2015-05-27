@@ -6,26 +6,23 @@ FROM trobz/sshd:12.04
 
 MAINTAINER Michel Meyer <mmeyer@trobz.com>
 
-# Install postgreSQL
+# Prepare for the setup 
 ############################################################
 
-RUN apt-get update
-RUN apt-get install -y postgresql postgresql-contrib-9.1
+RUN apt-get update && apt-get dist-upgrade -y
 
-# Run the official OpenERP prepare scripts
+# Install all services
 ############################################################
 
-ADD scripts/setup/odoo-deps.sh /tmp/setup/odoo/odoo-deps.sh
-RUN /bin/bash < /tmp/setup/odoo/odoo-deps.sh
-
-ADD scripts/setup/odoo.sh /tmp/setup/odoo/odoo.sh
-RUN /bin/bash < /tmp/setup/odoo/odoo.sh
-
-# Install OpenOffice + Aeroo
-############################################################
-
-ADD scripts/setup/aeroo.sh /tmp/setup/aeroo/aeroo.sh
-RUN /bin/bash < /tmp/setup/aeroo/aeroo.sh
+# PostgreSQL / OpenOffice
+RUN apt-get install -y postgresql postgresql-contrib-9.1 openoffice.org
+# Common lib
+ADD scripts/setup/common /tmp/setup/common
+RUN /bin/bash < /tmp/setup/common/deps.sh
+# OpenOffice + Aeroo
+ADD scripts/setup/odoo /tmp/setup/odoo
+RUN /bin/bash < /tmp/setup/odoo/deps.sh
+RUN /bin/bash < /tmp/setup/odoo/source.sh
 
 # Configure all services
 ############################################################
@@ -65,5 +62,6 @@ EXPOSE 8069 5432 22
 RUN echo 'debconf debconf/frontend select Dialog' | debconf-set-selections
 
 ADD scripts/start/init/20_postgres.sh /usr/local/docker/start/init/20_postgres.sh
+ADD scripts/start/init/25_virtual_env.sh /usr/local/docker/start/init/25_virtual_env.sh
 ADD scripts/start/init/30_remote_debug.sh /usr/local/docker/start/init/30_remote_debug.sh
 ADD scripts/start/init/40_demo_odoo.sh /usr/local/docker/start/init/40_demo_odoo.sh
