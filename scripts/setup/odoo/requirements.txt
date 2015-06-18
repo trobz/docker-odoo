@@ -44,6 +44,5 @@ openoffice-python==0.1.post20110209
 py==1.4.22
 pycparser==2.13
 pytest==2.6.0
-uno==0.3.3
 wheel==0.24.0
 
