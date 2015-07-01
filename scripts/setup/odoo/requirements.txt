@@ -39,7 +39,7 @@ xlwt==1.0.0
 aeroolib==1.0.0rc4
 cairocffi==0.6
 cffi==1.0.3
-Genshi==0.7
+Genshi==0.6.1
 openoffice-python==0.1.post20110209
 py==1.4.22
 pycparser==2.13
