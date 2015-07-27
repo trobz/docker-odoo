@@ -1,6 +1,6 @@
 ## Description
 
-This docker image setup a full openerp environment, with pre-installed PostgreSQL and LibreOffice headless services. 
+This docker image setup a full openerp environment, with pre-installed PostgreSQL and LibreOffice headless services.
 
 A one-command quick installation script is available (Ubuntu 14.04 only):
 ```
@@ -8,7 +8,7 @@ curl -sSL http://code.trobz.com/install/8.0  | /bin/bash
 ```
 
 > Note:
-The script is doing a lot for you, it will install [docker](http://docs.docker.com/installation/ubuntulinux/) and [fig](http://www.fig.sh/install.html), then pull the docker image from the hub and configure the container with a `fig.yml` file in `$HOME/docker/odoo-latest/`. It will also add the container into upstart config to automatically run it at the next host start up.
+The script is doing a lot for you, it will install [docker](http://docs.docker.com/installation/ubuntulinux/) and [docker-compose](https://docs.docker.com/compose/install/), then pull the docker image from the hub and configure the container with a `fig.yml` file in `$HOME/docker/odoo-latest/`. It will also add the container into upstart config to automatically run it at the next host start up.
 
 ## Dependency
 
@@ -17,7 +17,7 @@ This image is based on `trobz/sshd` + his own dependencies.
 ## OS / Services
 
 - Ubuntu 14.04.1 LTS
-- Supervisord 3.0b2 
+- Supervisord 3.0b2
 - PostgreSQL 9.3.5
 - Python 2.7.6 / 3.4.0
 - Odoo 8.0 + all required python packages (setup based on offical odoo `setup.py`)
@@ -29,7 +29,7 @@ This image is based on `trobz/sshd` + his own dependencies.
 If the env `ODOO_DEMO` is set to 1, the container will setup a Odoo instance for you by creating the database and adding a supervisord configuration for Odoo.
 
 Then, you will have a running Odoo instance accessible on `http://localhost:<port-map-to-8069>/` out-of-the-box.
- 
+
 
 ### PostgreSQL
 
