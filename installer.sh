@@ -110,7 +110,7 @@ exec_timeout () {
   set -e
 }
 
-check_fig () {
+check_docker_compose () {
     debug "check if the port localhost:${PORT_PREFIX}022 is open for SSH..."
     sleep 1s | timeout 2s telnet localhost "${PORT_PREFIX}022" 2>/dev/null | grep SSH &>/dev/null
     nc_status=$?
@@ -204,11 +204,11 @@ if [[ $? -ne 0 ]]; then
     check_status
 fi
 
-fig --version &>/dev/null
+docker-compose --version &>/dev/null
 if [[ $? -ne 0 ]]; then
-    info "Install fig..."
-    curl -L https://github.com/orchardup/fig/releases/download/0.5.2/linux 2>/dev/null | sudo tee /usr/local/bin/fig &>/dev/null
-    sudo chmod +x /usr/local/bin/fig
+    info "Install docker-compose..."
+    curl -L https://github.com/docker/compose/releases/download/1.3.3/docker-compose-`uname -s`-`uname -m` 2>/dev/null | sudo tee /usr/local/bin/docker-compose &>/dev/null
+    sudo chmod +x /usr/local/bin/docker-compose
     check_status
 fi
 
@@ -225,9 +225,9 @@ CONTAINER_SPACE="$USER_HOME/docker/odoo-$ODOO_VERSION"
 info "Setup container folder in $CONTAINER_SPACE"
 mkdir -p $CONTAINER_SPACE
 
-info "Generate default fig.yml configuration in $CONTAINER_SPACE/fig.yml"
+info "Generate default docker-compose.yml configuration in $CONTAINER_SPACE/docker-compose.yml"
 
-cat << EOF > $CONTAINER_SPACE/fig.yml
+cat << EOF > $CONTAINER_SPACE/docker-compose.yml
 container:
 
   image: trobz/odoo:$ODOO_VERSION
@@ -289,33 +289,33 @@ sudo docker pull trobz/odoo:$ODOO_VERSION
 info "Start Odoo $ODOO_VERSION container"
 
 cd "$CONTAINER_SPACE"
-sudo fig stop container &>/dev/null
-sudo fig rm --force container &>/dev/null
-sudo fig up container &
+sudo docker-compose stop container &>/dev/null
+sudo docker-compose rm --force container &>/dev/null
+sudo docker-compose up container &
 check_status
 
-# fig is checking if a service is listening on localhost:port, checking timeout=6s, retry=200,
+# docker-compose is checking if a service is listening on localhost:port, checking timeout=6s, retry=200,
 # so test will run during 20min
-exec_timeout 'check_fig' 1200
+exec_timeout 'check_docker_compose' 1200
 RETRY_STATUS=$?
 
 if [[ $RETRY_STATUS -eq 0 ]]; then
     info "Stop the container and restart it in background"
-    sudo fig stop &>/dev/null
-    sudo fig up -d
+    sudo docker-compose stop &>/dev/null
+    sudo docker-compose up -d
     check_status
 else
     error "Timeout, unable to connect to the container SSH port after 20min..."
     error "Please, try to start the container manually with the command:"
-    error "cd $CONTAINER_SPACE ; sudo fig up"
+    error "cd $CONTAINER_SPACE ; sudo docker-compose up"
     die
 fi
 
-exec_timeout 'check_fig' 1200
+exec_timeout 'check_docker_compose' 1200
 RETRY_STATUS=$?
 
 if [[ $RETRY_STATUS -eq 0 ]]; then
-    read -r -d '' msg << EOF 
+    read -r -d '' msg << EOF
 Odoo $ODOO_VERSION container setup finished !
 
 Access to:
@@ -330,7 +330,7 @@ EOF
 else
     error "Timeout, unable to connect to the container SSH port after 20min..."
     error "Please, try to start the container manually with the command:"
-    error "cd $CONTAINER_SPACE ; sudo fig up"
+    error "cd $CONTAINER_SPACE ; sudo docker-compose up"
     die
 fi
 
