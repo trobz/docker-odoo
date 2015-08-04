@@ -8,7 +8,7 @@ curl -sSL http://code.trobz.com/install/8.0  | /bin/bash
 ```
 
 > Note:
-The script is doing a lot for you, it will install [docker](http://docs.docker.com/installation/ubuntulinux/) and [docker-compose](https://docs.docker.com/compose/install/), then pull the docker image from the hub and configure the container with a `fig.yml` file in `$HOME/docker/odoo-latest/`. It will also add the container into upstart config to automatically run it at the next host start up.
+The script is doing a lot for you, it will install [docker](http://docs.docker.com/installation/ubuntulinux/) and [docker-compose](https://docs.docker.com/compose/install/), then pull the docker image from the hub and configure the container with a `docker-compose.yml` file in `$HOME/docker/odoo-latest/`. It will also add the container into upstart config to automatically run it at the next host start up.
 
 ## Dependency
 
